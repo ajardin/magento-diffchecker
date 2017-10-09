@@ -27,6 +27,7 @@ func main() {
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
+	checkFlags()
 
 	file, fileError := os.Open(Patch)
 	CheckError(fileError)
@@ -35,6 +36,17 @@ func main() {
 	parsePatchFile(file)
 	AnalyzeMagentoClasses()
 	//TODO
+}
+
+// checkFlags checks whether all flags are valid.
+func checkFlags() {
+	if IsFileExists(Patch) != true {
+		log.Fatal("The 'patch' flag must be a valid file.")
+	}
+
+	if IsDirectoryExists(Project) != true {
+		log.Fatal("The 'project' flag must be a valid directory.")
+	}
 }
 
 // parsePatchFile parses the .diff file and extracts modified files.
@@ -67,8 +79,14 @@ func CheckError(e error) {
 	}
 }
 
-// IsFileExists checks whether the given file exists.
+// IsFileExists checks whether the file exists.
 func IsFileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
+}
+
+// IsDirectoryExists checks whether the directory exists.
+func IsDirectoryExists(path string) bool {
+	stat, err := os.Stat(path)
+	return err == nil && stat.IsDir()
 }
