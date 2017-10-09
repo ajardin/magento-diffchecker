@@ -45,7 +45,7 @@ func loadRewrites() filepath.WalkFunc {
 	}
 }
 
-// extractRewritesFromFile extracts rewrites rules described in the given config.xml file.
+// extractRewritesFromFile extracts rewrites rules described in the config.xml file.
 func extractRewritesFromFile(path string) {
 	file, openError := os.Open(path)
 	CheckError(openError)
@@ -107,7 +107,7 @@ func checkPartialOverride(sourcePath string) {
 	}
 }
 
-// extractClassNameFromFile extracts the PHP class name from the given source path.
+// extractClassNameFromFile extracts the PHP class name from the source path.
 func extractClassNameFromFile(sourcePath string) string {
 	result := ""
 
