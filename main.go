@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -17,7 +18,7 @@ var (
 
 func init() {
 	flag.StringVar(&Patch, "patch", "", "Diff file to be applied on project.")
-	flag.StringVar(&Project, "source", "", "Directory where project source files can be found.")
+	flag.StringVar(&Project, "project", "", "Directory where project source files can be found.")
 }
 
 func main() {
@@ -32,6 +33,7 @@ func main() {
 	defer file.Close()
 
 	parsePatchFile(file)
+	AnalyzeMagentoClasses()
 	//TODO
 }
 
@@ -46,7 +48,7 @@ func parsePatchFile(file io.Reader) {
 			filePath := matches[1]
 
 			if strings.HasSuffix(filePath, ".php") {
-				//TODO
+				ClassePathList = append(ClassePathList, filePath)
 			} else if strings.HasSuffix(filePath, ".phtml") {
 				//TODO
 			} else if strings.HasSuffix(filePath, ".js") {
@@ -54,6 +56,8 @@ func parsePatchFile(file io.Reader) {
 			}
 		}
 	}
+
+	sort.Strings(ClassePathList)
 }
 
 // CheckError causes the current program to exit if an error occurred.
@@ -61,4 +65,10 @@ func CheckError(e error) {
 	if e != nil {
 		log.Fatal(e)
 	}
+}
+
+// IsFileExists checks whether the given file exists.
+func IsFileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }
