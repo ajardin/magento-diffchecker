@@ -3,6 +3,8 @@ package main
 import (
 	"bufio"
 	"flag"
+	"fmt"
+	"github.com/fatih/color"
 	"io"
 	"log"
 	"os"
@@ -17,17 +19,12 @@ var (
 )
 
 func init() {
-	flag.StringVar(&Patch, "patch", "", "Diff file to be applied on project.")
-	flag.StringVar(&Project, "project", "", "Directory where project source files can be found.")
+	flag.StringVar(&Patch, "patch", os.Getenv("PATCH"), "Diff file to be applied on project.")
+	flag.StringVar(&Project, "project", os.Getenv("PROJECT"), "Directory where project source files can be found.")
 }
 
 func main() {
-	flag.Parse()
-	if flag.NFlag() == 0 {
-		flag.PrintDefaults()
-		os.Exit(1)
-	}
-	checkFlags()
+	loadFlagValues()
 
 	file, fileError := os.Open(Patch)
 	CheckError(fileError)
@@ -35,11 +32,17 @@ func main() {
 
 	parsePatchFile(file)
 	AnalyzeMagentoClasses()
-	//TODO
+	AnalyzeMagentoTemplates()
+
+	color.Set(color.FgGreen)
+	fmt.Println("Magento analysis successfully completed.")
+	color.Unset()
 }
 
-// checkFlags checks whether all flags are valid.
-func checkFlags() {
+// loadFlagValues loads and checks whether all flag values are valid.
+func loadFlagValues() {
+	flag.Parse()
+
 	if IsFileExists(Patch) != true {
 		log.Fatal("The 'patch' flag must be a valid file.")
 	}
@@ -51,7 +54,7 @@ func checkFlags() {
 
 // parsePatchFile parses the .diff file and extracts modified files.
 func parsePatchFile(file io.Reader) {
-	pattern := regexp.MustCompile(`^Index: (?P<Path>\w+/(\w+/)*\w+\.(php|phtml|js))$`)
+	pattern := regexp.MustCompile(`^Index: (?P<Path>\w+/(\w+/)*\w+\.(php|phtml))$`)
 	scanner := bufio.NewScanner(file)
 
 	for scanner.Scan() {
@@ -60,16 +63,14 @@ func parsePatchFile(file io.Reader) {
 			filePath := matches[1]
 
 			if strings.HasSuffix(filePath, ".php") {
-				ClassePathList = append(ClassePathList, filePath)
+				classes.pathList = append(classes.pathList, filePath)
 			} else if strings.HasSuffix(filePath, ".phtml") {
-				//TODO
-			} else if strings.HasSuffix(filePath, ".js") {
-				//TODO
+				templates.pathList = append(templates.pathList, filePath)
 			}
 		}
 	}
 
-	sort.Strings(ClassePathList)
+	sort.Strings(classes.pathList)
 }
 
 // CheckError causes the current program to exit if an error occurred.
