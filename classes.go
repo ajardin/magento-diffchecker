@@ -11,42 +11,44 @@ import (
 	"strings"
 )
 
-var (
-	ClassePathList []string
-	rewriteList    map[string]string
-)
+type ClassesDetails struct {
+	pathList    []string
+	rewriteList map[string]string
+}
+
+var classes ClassesDetails
 
 // AnalyzeMagentoClasses executes the Magento classes analysis.
 func AnalyzeMagentoClasses() {
-	rewriteList = make(map[string]string)
-	filepath.Walk(Project+"/app/code/local/", loadRewrites())
+	classes.rewriteList = make(map[string]string)
+	filepath.Walk(Project+"/app/code/local/", loadClassRewrites())
 
-	for _, classPath := range ClassePathList {
+	for _, classPath := range classes.pathList {
 		if classPath == "app/Mage.php" || classPath == "app/code/core/Mage/Core/functions.php" {
 			continue
 		}
 
 		absolutePath := Project + "/" + classPath
-		checkCompleteOverride(absolutePath)
+		checkClassCompleteOverride(absolutePath)
 
 		if IsFileExists(absolutePath) {
-			checkPartialOverride(absolutePath)
+			checkClassPartialOverride(absolutePath)
 		}
 	}
 }
 
-// loadRewrites loads all rewrite rules from config.xml files in local pool.
-func loadRewrites() filepath.WalkFunc {
+// loadClassRewrites loads all rewrite rules from config.xml files in local pool.
+func loadClassRewrites() filepath.WalkFunc {
 	return func(path string, info os.FileInfo, err error) error {
 		if info.Name() == "config.xml" {
-			extractRewritesFromFile(path)
+			extractClassRewritesFromFile(path)
 		}
 		return nil
 	}
 }
 
-// extractRewritesFromFile extracts rewrites rules described in the config.xml file.
-func extractRewritesFromFile(path string) {
+// extractClassRewritesFromFile extracts rewrites rules described in the config.xml file.
+func extractClassRewritesFromFile(path string) {
 	file, openError := os.Open(path)
 	CheckError(openError)
 	defer file.Close()
@@ -56,7 +58,7 @@ func extractRewritesFromFile(path string) {
 
 	for _, node := range xmlquery.Find(document, "//rewrite/*") {
 		className := buildFullClassName(node.Parent.Parent.Data, node.Parent.Parent.Parent.Data, node.Data)
-		rewriteList[className] = node.InnerText()
+		classes.rewriteList[className] = node.InnerText()
 	}
 }
 
@@ -79,8 +81,8 @@ func buildFullClassName(moduleName string, classType string, className string) s
 	return strings.Join(parts, "_")
 }
 
-// checkCompleteOverride checks whether a complete override has been performed.
-func checkCompleteOverride(sourcePath string) {
+// checkClassCompleteOverride checks whether a complete override has been performed.
+func checkClassCompleteOverride(sourcePath string) {
 	replacer := strings.NewReplacer("core", "local", "community", "local")
 	targetPath := replacer.Replace(sourcePath)
 
@@ -89,19 +91,19 @@ func checkCompleteOverride(sourcePath string) {
 		customRelativePath := strings.TrimPrefix(targetPath, Project+"/")
 
 		color.Set(color.FgRed)
-		fmt.Println("Complete override detected:", originalRelativePath, "==>", customRelativePath)
+		fmt.Println("Complete override detected (class):", originalRelativePath, "==>", customRelativePath)
 		color.Unset()
 	}
 }
 
-// checkPartialOverride checks whether a partial override has been performed.
-func checkPartialOverride(sourcePath string) {
+// checkClassPartialOverride checks whether a partial override has been performed.
+func checkClassPartialOverride(sourcePath string) {
 	className := extractClassNameFromFile(sourcePath)
 	if className != "" {
-		value, isset := rewriteList[className]
+		value, isset := classes.rewriteList[className]
 		if isset == true {
 			color.Set(color.FgYellow)
-			fmt.Println("Partial override detected:", className, "==>", value)
+			fmt.Println("Partial override detected (class):", className, "==>", value)
 			color.Unset()
 		}
 	}
