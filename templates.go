@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/fatih/color"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -19,7 +21,10 @@ func AnalyzeMagentoTemplates() {
 	loadThemeList()
 
 	for _, templatePath := range templates.pathList {
-		if !strings.HasPrefix(templatePath, "app/design/frontend/base/default/") && !strings.HasPrefix(templatePath, "app/design/frontend/enterprise/default/") {
+		isFromBaseDefault := strings.HasPrefix(templatePath, filepath.FromSlash("app/design/frontend/base/default/"))
+		isFromEnterpriseDefault := strings.HasPrefix(templatePath, filepath.FromSlash("app/design/frontend/enterprise/default/"))
+
+		if !isFromBaseDefault && !isFromEnterpriseDefault {
 			continue
 		}
 
@@ -31,7 +36,7 @@ func AnalyzeMagentoTemplates() {
 
 // loadThemeList loads the theme list from the project directory.
 func loadThemeList() {
-	packageEntries, packageReadError := ioutil.ReadDir(Project + "/app/design/frontend")
+	packageEntries, packageReadError := ioutil.ReadDir(Project + filepath.FromSlash("/app/design/frontend"))
 	CheckError(packageReadError)
 
 	for _, packageEntry := range packageEntries {
@@ -39,14 +44,14 @@ func loadThemeList() {
 			continue
 		}
 
-		themeEntries, themeReadError := ioutil.ReadDir(Project + "/app/design/frontend/" + packageEntry.Name())
+		themeEntries, themeReadError := ioutil.ReadDir(Project + filepath.FromSlash("/app/design/frontend/") + packageEntry.Name())
 		CheckError(themeReadError)
 
 		for _, themeEntry := range themeEntries {
 			if !themeEntry.IsDir() {
 				continue
 			}
-			templates.themeList = append(templates.themeList, packageEntry.Name()+"/"+themeEntry.Name())
+			templates.themeList = append(templates.themeList, packageEntry.Name()+string(os.PathSeparator)+themeEntry.Name())
 		}
 	}
 }
@@ -55,13 +60,13 @@ func loadThemeList() {
 func checkTemplateCompleteOverride(templatePath string, themeName string) {
 	targetPath := ""
 
-	if strings.Contains(templatePath, "enterprise/default") {
-		targetPath = strings.Replace(templatePath, "enterprise/default", themeName, -1)
+	if strings.Contains(templatePath, filepath.FromSlash("enterprise/default")) {
+		targetPath = strings.Replace(templatePath, filepath.FromSlash("enterprise/default"), themeName, -1)
 	} else {
-		targetPath = strings.Replace(templatePath, "base/default", themeName, -1)
+		targetPath = strings.Replace(templatePath, filepath.FromSlash("base/default"), themeName, -1)
 	}
 
-	if IsFileExists(Project + "/" + targetPath) {
+	if IsFileExists(Project + string(os.PathSeparator) + targetPath) {
 		color.Set(color.FgRed)
 		fmt.Println("Complete override detected (template):", templatePath, "==>", targetPath)
 		color.Unset()
