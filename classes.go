@@ -21,14 +21,17 @@ var classes ClassesDetails
 // AnalyzeMagentoClasses executes the Magento classes analysis.
 func AnalyzeMagentoClasses() {
 	classes.rewriteList = make(map[string]string)
-	filepath.Walk(Project+"/app/code/local/", loadClassRewrites())
+	filepath.Walk(Project+filepath.FromSlash("/app/code/local/"), loadClassRewrites())
 
 	for _, classPath := range classes.pathList {
-		if classPath == "app/Mage.php" || classPath == "app/code/core/Mage/Core/functions.php" {
+		isMageFile := classPath == filepath.FromSlash("app/Mage.php")
+		isFunctionsFile := classPath == filepath.FromSlash("app/code/core/Mage/Core/functions.php")
+
+		if isMageFile || isFunctionsFile {
 			continue
 		}
 
-		absolutePath := Project + "/" + classPath
+		absolutePath := Project + string(os.PathSeparator) + classPath
 		checkClassCompleteOverride(absolutePath)
 
 		if IsFileExists(absolutePath) {
@@ -87,8 +90,8 @@ func checkClassCompleteOverride(sourcePath string) {
 	targetPath := replacer.Replace(sourcePath)
 
 	if IsFileExists(sourcePath) && IsFileExists(targetPath) {
-		originalRelativePath := strings.TrimPrefix(sourcePath, Project+"/")
-		customRelativePath := strings.TrimPrefix(targetPath, Project+"/")
+		originalRelativePath := strings.TrimPrefix(sourcePath, Project+string(os.PathSeparator))
+		customRelativePath := strings.TrimPrefix(targetPath, Project+string(os.PathSeparator))
 
 		color.Set(color.FgRed)
 		fmt.Println("Complete override detected (class):", originalRelativePath, "==>", customRelativePath)
