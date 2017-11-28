@@ -30,6 +30,13 @@ func main() {
 	CheckError(fileError)
 	defer file.Close()
 
+	color.Set(color.FgGreen)
+	fmt.Println("Magento analysis in progress...")
+	color.Unset()
+
+	fmt.Println("PATCH =", Patch)
+	fmt.Println("PROJECT =", Project)
+
 	parsePatchFile(file)
 	AnalyzeMagentoClasses()
 	AnalyzeMagentoTemplates()
@@ -54,13 +61,13 @@ func loadFlagValues() {
 
 // parsePatchFile parses the .diff file and extracts modified files.
 func parsePatchFile(file io.Reader) {
-	pattern := regexp.MustCompile(`^Index: (?P<Path>\w+/(\w+/)*\w+\.(php|phtml))$`)
+	pattern := regexp.MustCompile(`^diff --git (a/)?(?P<Path>\w+/(\w+/)*\w+\.(php|phtml))`)
 	scanner := bufio.NewScanner(file)
 
 	for scanner.Scan() {
 		matches := pattern.FindStringSubmatch(scanner.Text())
 		if matches != nil {
-			filePath := matches[1]
+			filePath := matches[2]
 
 			if strings.HasSuffix(filePath, ".php") {
 				classes.pathList = append(classes.pathList, filePath)
@@ -71,6 +78,7 @@ func parsePatchFile(file io.Reader) {
 	}
 
 	sort.Strings(classes.pathList)
+	sort.Strings(templates.pathList)
 }
 
 // CheckError causes the current program to exit if an error occurred.

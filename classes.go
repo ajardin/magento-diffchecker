@@ -27,7 +27,11 @@ func AnalyzeMagentoClasses() {
 		isMageFile := classPath == filepath.FromSlash("app/Mage.php")
 		isFunctionsFile := classPath == filepath.FromSlash("app/code/core/Mage/Core/functions.php")
 
-		if isMageFile || isFunctionsFile {
+		isDownloaderFile := strings.HasPrefix(classPath, "downloader"+string(os.PathSeparator))
+		isErrorFile := strings.HasPrefix(classPath, "errors"+string(os.PathSeparator))
+		isLibFile := strings.HasPrefix(classPath, "lib"+string(os.PathSeparator))
+
+		if isMageFile || isFunctionsFile || isDownloaderFile || isErrorFile || isLibFile {
 			continue
 		}
 
@@ -69,7 +73,7 @@ func extractClassRewritesFromFile(path string) {
 func buildFullClassName(moduleName string, classType string, className string) string {
 	tmp := ""
 
-	//TODO: check community modules /!\
+	//TODO: check controllers & community modules /!\
 	if strings.Contains(className, "enterprise") {
 		tmp = moduleName + "_" + strings.TrimSuffix(classType, "s") + "_" + className
 	} else {
